@@ -1,0 +1,43 @@
+# Ignore build artifacts
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.log
+*.cache
+
+# Ignore user-specific files
+*.user
+*.suo
+*.vs
+
+# Ignore IDE settings
+.vscode/
+.idea/
+*.csproj.user
+*.sln.cache
+*.sln.docstates
+
+# Ignore NuGet packages
+packages/
+*.nupkg
+project.lock.json
+
+# Ignore temporary files
+*.tmp
+*.swp
+
+# Ignore configuration files with potential secrets
+# Note: base appsettings.json is tracked; only environment-specific overrides are ignored.
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.Local.json
+secrets.json
+
+# Legacy commercial-tier assets and personal payment QR (kept locally, not published)
+IspSession/icons/isp session basic.jpeg
+IspSession/icons/isp session standard.jpeg
+IspSession/icons/isp session perpetual.jpeg
+IspSession/bmc_qr.png

@@ -1,0 +1,26 @@
+@Demo_HostAddress = http://localhost:5045
+
+### dmonstrates form field
+POST {{Demo_HostAddress}}/counter/
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+uniquefield=52656174-fe77-4e07-9e9c-a40dd3a91d45
+
+
+###
+GET {{Demo_HostAddress}}/counter/
+Cookie: IspSession=52656174-fe77-4e07-9e9c-a40dd3a91d45; uniquefield=IspSession=52656174-fe77-4e07-9e9c-a40dd3a91d45
+Accept: application/json
+
+### expire appcounter key
+GET {{Demo_HostAddress}}/appkeyexpire/
+Accept: application/json
+
+### app only test
+GET {{Demo_HostAddress}}/apponly
+Accept: application/json
+
+### counter and application test
+GET {{Demo_HostAddress}}/counterwithapp/
+Accept: application/json

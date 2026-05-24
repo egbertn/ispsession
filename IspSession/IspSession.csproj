@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <UserSecretsId>5a2760dc-b685-4d8c-8c65-56404730e99b</UserSecretsId>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <PackageId>NCV.ISPSession</PackageId>
+    <IncludeXmlDocumentation>true</IncludeXmlDocumentation>
+    <Version>13.0.1</Version>
+    <Authors>Nierop Computer Vision</Authors>
+    <Description>Redis-backed session and application state for ASP.NET Core 8+. AES-encrypted Redis keys, Brotli compression, per-key expiration events, optimistic concurrency (write-on-change only), and session affinity via cookie, header, or IP. MIT-licensed.</Description>
+    <PackageReleaseNotes>
+      Improvements:
+      Licensing clarification: The project is licensed under the MIT License, which is a permissive open-source license. This means that you are free to use, modify, and distribute the software as long as you include the original copyright notice and license terms. The MIT License does not require you to release your modifications under the same license, allowing for both open-source and proprietary use.
+    </PackageReleaseNotes>
+    <PackageTags>session;session-state;redis;aspnetcore;aspnet-core;distributed-cache;application-state;bff;stackexchange-redis;encryption</PackageTags>
+    <PackageProjectUrl>https://github.com/egbertn/ispsession</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/egbertn/ispsession</RepositoryUrl>
+    <PackageIcon>logo.png</PackageIcon>
+  </PropertyGroup>
+
+<ItemGroup>
+  <None Include="LICENSE.txt" Pack="true" PackagePath="" />
+  <None Include="README.md" Pack="true" PackagePath="" />
+  <None Include="icons/logo.png" Pack="true" PackagePath="" />
+
+</ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.58" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+<Target Name="NuGetPush" AfterTargets="Pack" Condition="'$(NCV_NUGET_ISPSESSION_KEY)' != ''">
+  <Exec Command="dotnet nuget push &quot;./bin/Release/$(PackageId).$(PackageVersion).nupkg&quot; --api-key $(NCV_NUGET_ISPSESSION_KEY) --source https://api.nuget.org/v3/index.json" />
+</Target>
+
+</Project>
