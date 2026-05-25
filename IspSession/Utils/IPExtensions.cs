@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Sockets;
 using Microsoft.AspNetCore.Http;
 
 namespace NCV.ISPSession.Utils;
@@ -7,23 +6,7 @@ namespace NCV.ISPSession.Utils;
 internal static class IPExtensions
 {
     // <see href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For"/>
-    private static readonly string XForwardedForHeader = new(['X', '-', 'F', 'o', 'r', 'w', 'a', 'r', 'd', 'e', 'd', '-', 'F', 'o', 'r']);
-    private const string XForwardedForHost = "X-Forwarded-Host";
-    private const string XRealIp = "X-Real-Ip";
-
-    internal static bool GetRealIp(this HttpRequest request, out IPAddress? iPAddress)
-    {
-        iPAddress = default;
-        if (request.Headers.TryGetValue(XRealIp, out var values) == false)
-        {
-            return false;
-        }
-        if (IPAddress.TryParse(values[0], out IPAddress? address))
-        {
-            iPAddress = address;
-        }
-        return true;
-    }
+    private static readonly string XForwardedForHeader = "X-Forwarded-For";
 
     // combine all addresses between us and client
     private static IEnumerable<IPAddress> GetRemoteAddresses(HttpContext httpContext)
@@ -52,36 +35,8 @@ internal static class IPExtensions
         }
     }
 
-    internal static bool IsLocalNetwork(this IPAddress ip)
-    {
-        if (IPAddress.IsLoopback(ip))
-        {
-            return true;
-        }
-        else if (ip.AddressFamily == AddressFamily.InterNetwork)
-        {
-            Span<byte> bytes = stackalloc byte[4];
-            ip.TryWriteBytes(bytes, out _);
-
-            return (bytes[0] == 10) ||
-                   (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
-                   (bytes[0] == 192 && bytes[1] == 168);
-        }
-        else if (ip.AddressFamily == AddressFamily.InterNetworkV6)
-        {
-            // Check for Unique Local Address (ULA) fc00::/7
-            if (ip.IsIPv6UniqueLocal || ip.IsIPv6LinkLocal)
-            {
-                return true;
-            }
-
-        }
-        return false;
-    }
-
     internal static int IPHash(HttpContext context)
     {
-
         //1-5 hops is max says gpt, worst-case 8x IPv6=128
         Span<byte> span = stackalloc byte[128];
         int offset = 0;

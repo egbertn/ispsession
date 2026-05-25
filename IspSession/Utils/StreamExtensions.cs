@@ -14,7 +14,6 @@ internal static class StreamExtensions
     private const int MAX_STACK_SIZE = 2000;
 
     private static readonly JsonSerializerOptions DefaultOptions = new ()
-
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition =  System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
@@ -271,12 +270,12 @@ internal static class StreamExtensions
     internal static void WriteDecimal(this Stream stream, decimal value)
     {
         Span<int> bits = stackalloc int[sizeof(decimal) / sizeof(int)];
-        decimal.TryGetBits(value, bits, out  _);        
+        decimal.TryGetBits(value, bits, out  _);
         Span<byte> partBytes = stackalloc byte[4];
         foreach (int part in bits)
         {
             BinaryPrimitives.WriteInt32LittleEndian(partBytes, part);
-            stream.Write(partBytes);        
+            stream.Write(partBytes);
         }
     }
 
@@ -357,7 +356,7 @@ internal static class StreamExtensions
     internal static short ReadInt16(this Stream stream)
     {
         Span<byte> buffer = stackalloc byte[sizeof(short)];
-        stream.ReadExactly(buffer);        
+        stream.ReadExactly(buffer);
         return BinaryPrimitives.ReadInt16LittleEndian(buffer);
     }
 
@@ -386,7 +385,7 @@ internal static class StreamExtensions
     {
         Span<byte> buffer = stackalloc byte[sizeof(double)];
         stream.ReadExactly(buffer);
-        
+
         return BinaryPrimitives.ReadDoubleLittleEndian(buffer);
     }
 
@@ -415,7 +414,7 @@ internal static class StreamExtensions
         Span<byte> buffer = stringLength < MAX_STACK_SIZE ? stackalloc byte[stringLength] : (heapBytes = shared.Rent(stringLength));
         // we don't need  a loop since MemoryStream is built upon a full byte buffer
         stream.ReadExactly(buffer[..stringLength]);
-        
+
         try
         {
             return Encoding.UTF8.GetString(buffer[..stringLength]);
@@ -438,7 +437,7 @@ internal static class StreamExtensions
     internal static Guid ReadGuid(this Stream stream)
     {
         Span<byte> buffer = stackalloc byte[16];
-        stream.ReadExactly(buffer); 
+        stream.ReadExactly(buffer);
         return new Guid(buffer);
     }
 
