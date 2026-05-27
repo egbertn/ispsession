@@ -1,10 +1,21 @@
 using System.Net;
 using Microsoft.AspNetCore.Http;
-
+using System.Numerics;
 namespace NCV.ISPSession.Utils;
 
 internal static class IPExtensions
 {
+      private static readonly HashSet<Type>  OtherSimpleTypes = [
+            typeof(string),
+            typeof(DateTime),
+            typeof(DateTimeOffset),
+            typeof(TimeSpan),
+            typeof(DateOnly),
+            typeof(TimeOnly),
+            typeof(decimal),
+            typeof(float),
+            typeof(double),
+            typeof(BigInteger) ];
     // <see href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For"/>
     private static readonly string XForwardedForHeader = "X-Forwarded-For";
 
@@ -66,5 +77,12 @@ internal static class IPExtensions
             hash += hash << 5;
             return hash;
         }
+    }
+
+
+    public static bool IsSimpleType(this Type type)
+    {
+        var targetType = Nullable.GetUnderlyingType(type) ?? type;
+        return targetType.IsPrimitive || targetType.IsEnum || OtherSimpleTypes.Contains(targetType);
     }
 }

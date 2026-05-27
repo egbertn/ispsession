@@ -1,7 +1,6 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using NCV.ISPSession.Internal;
@@ -349,7 +348,7 @@ internal static class StreamExtensions
             throw new InvalidOperationException($"Actual length of BigInteger is {bigIntLength} we support only max {MAX_STACK_SIZE}");
         }
         Span<byte> bytes = stackalloc byte[bigIntLength];
-        bigInteger.TryWriteBytes(bytes, out _, isBigEndian: !BitConverter.IsLittleEndian);
+        bigInteger.TryWriteBytes(bytes, out _, isBigEndian: false);
         stream.WriteInt32(bigIntLength);
         stream.Write(bytes);
     }
@@ -394,9 +393,12 @@ internal static class StreamExtensions
 
     internal static decimal ReadDecimal(this Stream stream)
     {
-        Span<int> parts = stackalloc int[4];
-        Span<byte> buffer = MemoryMarshal.AsBytes(parts);
-        stream.ReadExactly(buffer);
+        const int decimalSize = sizeof(decimal) / sizeof(int);
+        Span<int> parts = stackalloc int[decimalSize];
+        for (var i = 0; i < decimalSize; i++)
+        {
+            parts[i] = stream.ReadInt32();
+        }
         return new decimal(parts);
     }
 
@@ -455,6 +457,6 @@ internal static class StreamExtensions
         var bigintBytes = stream.ReadInt32();
         Span<byte> buffer = stackalloc byte[bigintBytes];
         stream.ReadExactly(buffer);
-        return new BigInteger(buffer, isBigEndian: !BitConverter.IsLittleEndian);
+        return new BigInteger(buffer, isBigEndian: false);
     }
 }
