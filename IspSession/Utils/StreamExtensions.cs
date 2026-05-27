@@ -287,29 +287,32 @@ internal static class StreamExtensions
         WriteInt16(stream, (short)value.Offset.TotalMinutes);
     }
 
-    internal static void WriteLengthPrefixedUtfString(this Stream stream, string? value)
+    internal static void WriteLengthPrefixedUtfString(this Stream stream, string value)
     {
-        if (value != null)
-        {
-            var stringLength = Encoding.UTF8.GetByteCount(value);
-            var totalLength = stringLength + sizeof(int);
-            var shared = ArrayPool<byte>.Shared;
-            byte[]? heapBytes = null;
-            try
-            {
-                Span<byte> buffer = totalLength < MAX_STACK_SIZE ? stackalloc byte[totalLength] : (heapBytes = shared.Rent(totalLength));
-                BinaryPrimitives.WriteInt32LittleEndian(buffer, stringLength);
-                Encoding.UTF8.GetBytes(value, buffer[sizeof(int)..totalLength]);
-                stream.Write(buffer[..totalLength]);
-            }
-            finally
-            {
-                if (heapBytes != null) shared.Return(heapBytes);
-            }
-        }
-        else
+        ArgumentNullException.ThrowIfNull(value);
+        if (value.Length == 0)
         {
             stream.WriteInt32(0);
+            return;
+        }
+
+        var stringLength = Encoding.UTF8.GetByteCount(value);
+        var totalLength = checked(stringLength + sizeof(int));
+        var shared = ArrayPool<byte>.Shared;
+        byte[]? heapBytes = null;
+        try
+        {
+            Span<byte> buffer = totalLength <= MAX_STACK_SIZE ? stackalloc byte[totalLength] : (heapBytes = shared.Rent(totalLength));
+            BinaryPrimitives.WriteInt32LittleEndian(buffer, stringLength);
+            Encoding.UTF8.GetBytes(value, buffer[sizeof(int)..totalLength]);
+            stream.Write(buffer[..totalLength]);
+        }
+        finally
+        {
+            if (heapBytes != null)
+            {
+                shared.Return(heapBytes);
+            }
         }
     }
 
@@ -409,21 +412,25 @@ internal static class StreamExtensions
             throw new InvalidDataException("String length cannot be negative.");
         }
 
+        if (stringLength == 0)
+        {
+            return string.Empty;
+        }
+
         byte[]? heapBytes = null;
         var shared = ArrayPool<byte>.Shared;
-        Span<byte> buffer = stringLength < MAX_STACK_SIZE ? stackalloc byte[stringLength] : (heapBytes = shared.Rent(stringLength));
-        // we don't need  a loop since MemoryStream is built upon a full byte buffer
-        stream.ReadExactly(buffer[..stringLength]);
+        Span<byte> buffer = stringLength <= MAX_STACK_SIZE ? stackalloc byte[stringLength] : (heapBytes = shared.Rent(stringLength));
 
         try
         {
+            stream.ReadExactly(buffer[..stringLength]);
             return Encoding.UTF8.GetString(buffer[..stringLength]);
         }
         finally
         {
-            if (stringLength >= MAX_STACK_SIZE)
+            if (heapBytes != null)
             {
-                shared.Return(heapBytes!);
+                shared.Return(heapBytes);
             }
         }
     }
