@@ -1,11 +1,10 @@
 using System.Numerics;
-using System.Reflection;
 
 namespace NCV.ISPSession.Utils;
 
 internal static class BrokerExtensions
 {
-    private static readonly Type[]  OtherSimpleTypes = [
+    private static readonly HashSet<Type>  OtherSimpleTypes = [
             typeof(string),
             typeof(DateTime),
             typeof(DateTimeOffset),
@@ -19,15 +18,7 @@ internal static class BrokerExtensions
 
     public static bool IsSimpleType(this Type type)
     {
-        var nullableUnderlyingType = Nullable.GetUnderlyingType(type);
-        var nullableUnderlyingTypeInfo = nullableUnderlyingType?.GetTypeInfo();
-
-        if (nullableUnderlyingType != null && (nullableUnderlyingTypeInfo!.IsPrimitive || OtherSimpleTypes.Contains(nullableUnderlyingType) || nullableUnderlyingTypeInfo.IsEnum))
-        {
-            return true;
-        }
-
-        var typeInfo = type.GetTypeInfo();
-        return typeInfo.IsPrimitive || OtherSimpleTypes.Contains(type) || typeInfo.IsEnum;
+        var targetType = Nullable.GetUnderlyingType(type) ?? type;
+        return targetType.IsPrimitive || targetType.IsEnum || OtherSimpleTypes.Contains(targetType);
     }
 }
