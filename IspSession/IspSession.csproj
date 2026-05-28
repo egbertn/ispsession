@@ -16,7 +16,7 @@
     <Description>Redis-backed session and application state for ASP.NET Core 8+. AES-encrypted Redis keys, Brotli compression, per-key expiration events, optimistic concurrency (write-on-change only), and session affinity via cookie, header, or IP. MIT-licensed.</Description>
     <PackageReleaseNotes>AOT compatibility added. Compilation Warings CS8604 can be ignored as they are false positives due to the way the code is structured. See
     </PackageReleaseNotes>
-    <PackageTags>session;session-state;redis;aspnetcore;aspnet-core;distributed-cache;application-state;bff;stackexchange-redis;encryption</PackageTags>
+    <PackageTags>session;session-state;redis;aspnetcore;aspnet-core;distributed-cache;application-state;state-management;stackexchange-redis;native-aot;aot;trimming</PackageTags>
     <PackageProjectUrl>https://github.com/egbertn/ispsession</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
