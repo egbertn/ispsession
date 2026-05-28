@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <VerifyReferenceAotCompatibility>true</VerifyReferenceAotCompatibility>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -8,10 +11,10 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <PackageId>NCV.ISPSession</PackageId>
     <IncludeXmlDocumentation>true</IncludeXmlDocumentation>
-    <Version>13.0.4</Version>
+    <Version>13.0.5</Version>
     <Authors>Nierop Computer Vision</Authors>
     <Description>Redis-backed session and application state for ASP.NET Core 8+. AES-encrypted Redis keys, Brotli compression, per-key expiration events, optimistic concurrency (write-on-change only), and session affinity via cookie, header, or IP. MIT-licensed.</Description>
-    <PackageReleaseNotes>Less reflection required for serialization, improved error handling, and better documentation. See the GitHub repository for details.
+    <PackageReleaseNotes>AOT compatibility added. Compilation Warings CS8604 can be ignored as they are false positives due to the way the code is structured. See
     </PackageReleaseNotes>
     <PackageTags>session;session-state;redis;aspnetcore;aspnet-core;distributed-cache;application-state;bff;stackexchange-redis;encryption</PackageTags>
     <PackageProjectUrl>https://github.com/egbertn/ispsession</PackageProjectUrl>

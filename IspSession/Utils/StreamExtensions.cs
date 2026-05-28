@@ -1,8 +1,10 @@
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using NCV.ISPSession.Internal;
 using TypeCode = NCV.ISPSession.Internal.TypeCode;
 
@@ -15,10 +17,10 @@ internal static class StreamExtensions
     private static readonly JsonSerializerOptions DefaultOptions = new ()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition =  System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition =  JsonIgnoreCondition.WhenWritingNull
     };
 
-    internal static void WriteValue(this Stream memoryStream, object? value)
+    internal static void WriteValue(this Stream memoryStream, object? value, JsonSerializerContext? jsonContext = null)
     {
         int pos = 0;
 
@@ -55,7 +57,17 @@ internal static class StreamExtensions
             switch (typeCode)
             {
                 case TypeCode.Object:
-                    var utfBuffer = JsonSerializer.SerializeToUtf8Bytes(value, DefaultOptions);
+                    byte[] utfBuffer;
+                    if (jsonContext != null)
+                    {
+                        var typeInfo = jsonContext.GetTypeInfo(value.GetType())
+                            ?? throw new InvalidOperationException($"Type '{value.GetType()}' is not registered in the provided JsonSerializerContext. Add [JsonSerializable(typeof({value.GetType().Name}))] to your context.");
+                        utfBuffer = JsonSerializer.SerializeToUtf8Bytes(value, typeInfo);
+                    }
+                    else
+                    {
+                        utfBuffer = SerializeReflection(value);
+                    }
                     memoryStream.Write(utfBuffer);
                     break;
                 case TypeCode.Int32:
@@ -120,7 +132,7 @@ internal static class StreamExtensions
 
     }
 
-    internal static T ReadValue<T>(this Stream memoryStream)
+    internal static T ReadValue<T>(this Stream memoryStream, JsonSerializerContext? jsonContext = null)
     {
         int valueLength = memoryStream.ReadInt32();
         TypeCode typeCode = (TypeCode)memoryStream.ReadByte();
@@ -190,8 +202,17 @@ internal static class StreamExtensions
                 try
                 {
                     Span<byte> bytes = jsonLength < MAX_STACK_SIZE ? stackalloc byte[jsonLength] : (heapBytes = shared.Rent(jsonLength));
-                    memoryStream.Read(bytes[..jsonLength]);
-                    value = JsonSerializer.Deserialize<T>(bytes[..jsonLength], DefaultOptions);
+                    memoryStream.ReadExactly(bytes[..jsonLength]);
+                    if (jsonContext != null)
+                    {
+                        var typeInfo = jsonContext.GetTypeInfo(typeof(T)) as System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>
+                            ?? throw new InvalidOperationException($"Type '{typeof(T)}' is not registered in the provided JsonSerializerContext. Add [JsonSerializable(typeof({typeof(T).Name}))] to your context.");
+                        value = JsonSerializer.Deserialize(bytes[..jsonLength], typeInfo);
+                    }
+                    else
+                    {
+                        value = DeserializeReflection<T>(bytes[..jsonLength]);
+                    }
 
                 }
                 finally
@@ -214,6 +235,16 @@ internal static class StreamExtensions
 
         return (T)value;
     }
+
+    [RequiresDynamicCode("JSON serialization of arbitrary types requires dynamic code. Provide a JsonSerializerContext via ISPSessionOptions.JsonContext for AOT compatibility.")]
+    [RequiresUnreferencedCode("JSON serialization of arbitrary types may require types that cannot be statically analyzed. Provide a JsonSerializerContext via ISPSessionOptions.JsonContext for AOT compatibility.")]
+    private static byte[] SerializeReflection(object value)
+        => JsonSerializer.SerializeToUtf8Bytes(value, DefaultOptions);
+
+    [RequiresDynamicCode("JSON deserialization of arbitrary types requires dynamic code. Provide a JsonSerializerContext via ISPSessionOptions.JsonContext for AOT compatibility.")]
+    [RequiresUnreferencedCode("JSON deserialization of arbitrary types may require types that cannot be statically analyzed. Provide a JsonSerializerContext via ISPSessionOptions.JsonContext for AOT compatibility.")]
+    private static T? DeserializeReflection<T>(Span<byte> bytes)
+        => JsonSerializer.Deserialize<T>(bytes, DefaultOptions);
 
     internal static void ReadKeyValuePairs(this Stream stream, IDictionary<string, KeyState> keyValuePairs, int count)
     {

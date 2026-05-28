@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http;
 
 namespace NCV.ISPSession.Internal;
@@ -26,6 +27,7 @@ internal sealed class GlobalState
         Mode = runtimeOptions.Mode;
         SecureCookie = runtimeOptions.CookieSecure;
         Expires = runtimeOptions.Expires != null ? DateTimeOffset.UtcNow + runtimeOptions.Expires : null;
+        JsonContext = options.JsonContext;
     }
 
     public AffinityMethods Affinity { get; }
@@ -59,4 +61,6 @@ internal sealed class GlobalState
     public bool SubscribeExpireEvents {get;}
 
     public UseMode Mode { get; }
+
+    public JsonSerializerContext? JsonContext { get; }
 }

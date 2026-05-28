@@ -31,6 +31,9 @@ internal sealed class StateBroker
     }
 
     private Task<IDatabase> GetDatabase() => _iSPSessionConnectionMultiplexer.GetDatabaseAsync();
+
+    internal System.Text.Json.Serialization.JsonSerializerContext? JsonContext => _globalState.JsonContext;
+
     public void RemoveSessionCookie(HttpContext httpContext)
     {
         if (_globalState.Affinity == AffinityMethods.Cookie)
@@ -107,16 +110,19 @@ internal sealed class StateBroker
             });
 
         cookies!.Delete(_globalState.CorrelationCookieName!);
-        cookies!.Append(_globalState.CorrelationCookieName!, _correlationId,
-            new CookieOptions
-            {
-                Domain = ProcessWildCardDomain(_globalState.CookieDomain, request.Host.Host),
-                Path = _globalState.CookiePath,
-                Secure = _globalState.SecureCookie,
-                HttpOnly = false, //no risk involved, no correlation with backend
-                SameSite = _globalState.SameSiteMode,
-                Expires = cookieExpires != null ? now.Add(cookieExpires.Value) : null
-            });
+        if (_correlationId  is not null)
+        {
+            cookies!.Append(_globalState.CorrelationCookieName!, _correlationId,
+                new CookieOptions
+                {
+                    Domain = ProcessWildCardDomain(_globalState.CookieDomain, request.Host.Host),
+                    Path = _globalState.CookiePath,
+                    Secure = _globalState.SecureCookie,
+                    HttpOnly = false, //no risk involved, no correlation with backend
+                    SameSite = _globalState.SameSiteMode,
+                    Expires = cookieExpires != null ? now.Add(cookieExpires.Value) : null
+                });
+        }
         var encryptedSessionKey = EncryptKey(_sessionId!);
         //marker for don't touch
         var longSessionKey = EncryptKey($"{_sessionId}_immortal");
@@ -377,7 +383,7 @@ internal sealed class StateBroker
                     if ((v.IsNew || v.Dirty) && !isEmpty)
                     {
                         stream.SetLength(0);
-                        stream.WriteValue(v.Value);
+                        stream.WriteValue(v.Value, _globalState.JsonContext);
                         stream.Position = 0;
                     }
                     multipleSet[ct++] = new KeyValuePair<RedisKey, RedisValue>(EncryptKey($"{applicationName}_{k}"),

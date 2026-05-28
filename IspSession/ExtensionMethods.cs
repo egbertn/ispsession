@@ -87,8 +87,8 @@ public static class ExtensionMethods
 
             ISPSessionOptions iSPSessionOptions = new()
             {
-                KeyEncryptionSecret = section.GetValue<string>("KeyEncryptionSecret") ?? throw new InvalidOperationException("missing KeyEncryptionSecret"),
-                MonitorSessionKey = section.GetValue<string?>("MonitorSessionKey"),
+                KeyEncryptionSecret = section["KeyEncryptionSecret"] ?? throw new InvalidOperationException("missing KeyEncryptionSecret"),
+                MonitorSessionKey = section["MonitorSessionKey"],
             };
 
             return new GlobalState(iSPSessionOptions, defaultOptions);

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http;
 
 namespace NCV.ISPSession;
@@ -27,7 +28,7 @@ public sealed class ISPSessionRuntimeOptions
     /// We will set this cookie as Essential, Session, HttpOnly and Strict
     /// </summary>
     public string SessionCookieName { get; set; } = "IspSession";
-    
+
     /// <summary>
     /// optional domain of the session cookie, e.g. ".mydomain.com"
     /// </summary>
@@ -47,16 +48,16 @@ public sealed class ISPSessionRuntimeOptions
     /// <summary>
     /// defines the Secureness of the sessioncookie, whether or not the cookie must work only over https or http(s)
     /// When in production or staging this value will be set to true
-    /// ISP Session does not allow unsecure cookies in production 
+    /// ISP Session does not allow unsecure cookies in production
     /// </summary>
     public bool CookieSecure { get; set;}
 
     /// <summary>
-    /// defines relatively the persistance expiration value, if not used, it is a session only cookie. 
+    /// defines relatively the persistance expiration value, if not used, it is a session only cookie.
     /// Use with care
     /// </summary>
     public TimeSpan? Expires { get; set;}
-    
+
     /// <summary>
     /// Defaults to using Session cookies.
     /// Specifies which affinity strategy ISP Sessions need to follow
@@ -116,5 +117,12 @@ public sealed class ISPSessionOptions
     /// keep this secret
     /// </summary>
     public string? MonitorSessionKey { get; set; }
+
+    /// <summary>
+    /// Optional. Provide a <see cref="JsonSerializerContext"/> to enable AOT-safe JSON
+    /// serialization of complex objects stored in session/application state.
+    /// When omitted, reflection-based serialization is used (compatible with JIT, not AOT-safe).
+    /// </summary>
+    public JsonSerializerContext? JsonContext { get; set; }
 
 }

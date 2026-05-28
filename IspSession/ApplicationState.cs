@@ -167,7 +167,7 @@ internal sealed class ApplicationState: IApplicationState, IApplicationStateUnbo
 
             using MemoryStream memoryStream = new(keyState.State);
             // we need to compensate the not written length which does exist in ISessionState
-            var value = memoryStream.ReadValue<T>();
+            var value = memoryStream.ReadValue<T>(_sessionBroker.JsonContext);
             keyState.Value = value;
             return value;
         }

@@ -172,7 +172,7 @@ internal sealed class SessionState : ISessionState
             }
 
             using MemoryStream memoryStream = new(keyState.State);
-            var value = memoryStream.ReadValue<T>();
+            var value = memoryStream.ReadValue<T>(_globalState.JsonContext);
             keyState.Value = value;
             return value;
 
@@ -222,7 +222,7 @@ internal sealed class SessionState : ISessionState
             if (v.Dirty || v.IsNew)
             {
                 dirty = true;
-                outputStream.WriteValue(v.Value);
+                outputStream.WriteValue(v.Value, _globalState.JsonContext);
             }
             else
             {
@@ -246,7 +246,7 @@ internal sealed class SessionState : ISessionState
             outputStream.Position = compressedPos;
             outputStream.WriteBoolean(true);
             outputStream.Position = 0;
-            outputStream.Read(head);
+            outputStream.ReadExactly(head);
             compressed.Write(head);
             BrotliStream brotliStream = new(compressed, CompressionLevel.Optimal, true);
             outputStream.CopyTo(brotliStream);
