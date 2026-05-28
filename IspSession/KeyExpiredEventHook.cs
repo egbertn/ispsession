@@ -13,21 +13,19 @@ public sealed class KeyExpiredEventHook
 {
     private readonly IISPSessionConnectionMultiplexer _connectionMultiplexer;
     private readonly ILogger<KeyExpiredEventHook> _logger;
-    private readonly GlobalState _globalState;
     private readonly IServiceProvider _serviceProvider;
+    private string? _applicationName;
 
     internal KeyExpiredEventHook
     (
         IISPSessionConnectionMultiplexer iSPSessionConnectionMultiplexer,
         ILogger<KeyExpiredEventHook> logger,
-        IServiceProvider serviceProvider,
-        GlobalState globalState
+        IServiceProvider serviceProvider
     )
     {
         _connectionMultiplexer = iSPSessionConnectionMultiplexer;
         _logger = logger;
         _subscriber = null;
-        _globalState = globalState;
         _serviceProvider = serviceProvider;
     }
 
@@ -65,7 +63,7 @@ public sealed class KeyExpiredEventHook
     {
         if (!_channelName.IsNullOrEmpty && _subscriber != null)
         {
-            _logger.LogInformation("Unsubscribed app {ApplicationName}", _globalState.ApplicationName);
+            _logger.LogInformation("Unsubscribed app {ApplicationName}", _applicationName);
             return _subscriber.UnsubscribeAsync(_channelName);
         }
         return Task.CompletedTask;
@@ -114,8 +112,12 @@ public sealed class KeyExpiredEventHook
     }
     internal async Task SubscribeToKeyExpirationEvents()
     {
+        await using var initScope = _serviceProvider.CreateAsyncScope();
+        var globalState = initScope.ServiceProvider.GetRequiredService<GlobalState>();
+        _applicationName = globalState.ApplicationName;
+
         var multiplexer = await _connectionMultiplexer.GetConnectionMultiplexerAsync(true);
-        if (_globalState.SubscribeExpireEvents)
+        if (globalState.SubscribeExpireEvents)
         {
             SingleNodeConfigSet(multiplexer);
         }
@@ -130,13 +132,13 @@ public sealed class KeyExpiredEventHook
             {
                 if (!value.IsNullOrEmpty)
                 {
-                    var (success, fullKey) = DecryptValue(value)!;
-                    if (success && fullKey!.StartsWith(_globalState.ApplicationName!))
+                    var (success, fullKey) = DecryptValue(value, globalState.KeyEncryptionSecret)!;
+                    if (success && fullKey!.StartsWith(globalState.ApplicationName!))
                     {
-                        var keyName = fullKey[(_globalState.ApplicationName!.Length + 1)..];
+                        var keyName = fullKey[(globalState.ApplicationName!.Length + 1)..];
                         // Verwijder de key uit de set
-                        await multiplexer.GetDatabase().SetRemoveAsync(EncryptKey(_globalState.ApplicationName), keyName, CommandFlags.FireAndForget);
-                        _logger.LogInformation("Expire key and removal of {KeyName} from {setName}", keyName, _globalState.ApplicationName);
+                        await multiplexer.GetDatabase().SetRemoveAsync(EncryptKey(globalState.ApplicationName, globalState.KeyEncryptionSecret), keyName, CommandFlags.FireAndForget);
+                        _logger.LogInformation("Expire key and removal of {KeyName} from {setName}", keyName, globalState.ApplicationName);
                         await using var scope = _serviceProvider.CreateAsyncScope();
                         var ApplicationState = scope.ServiceProvider.GetRequiredService<IApplicationState>();
                         await OnKeyExpiredAsync(keyName, ApplicationState);
@@ -149,7 +151,7 @@ public sealed class KeyExpiredEventHook
             }
         });
     }
-    private RedisKey EncryptKey(ReadOnlySpan<char> value) => KeyCrypto.Encrypt(value, _globalState.KeyEncryptionSecret, StateBroker.IV).ToArray();
+    private static RedisKey EncryptKey(ReadOnlySpan<char> value, string keyEncryptionSecret) => KeyCrypto.Encrypt(value, keyEncryptionSecret, StateBroker.IV).ToArray();
 
-    private (bool success, string? value) DecryptValue(RedisValue key) => KeyCrypto.Decrypt((byte[])key!, _globalState.KeyEncryptionSecret, StateBroker.IV);
+    private static (bool success, string? value) DecryptValue(RedisValue key, string keyEncryptionSecret) => KeyCrypto.Decrypt((byte[])key!, keyEncryptionSecret, StateBroker.IV);
 }

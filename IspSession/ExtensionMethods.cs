@@ -57,8 +57,8 @@ public static class ExtensionMethods
     /// </summary>
     public static IApplicationBuilder UseISPSession(this IApplicationBuilder builder)
     {
-        GlobalState globalState = builder.ApplicationServices.GetRequiredService<GlobalState>();
-        Type type = globalState.Mode switch
+        var runtimeOptions = builder.ApplicationServices.GetRequiredService<ISPSessionRuntimeOptions>();
+        Type type = runtimeOptions.Mode switch
         {
             UseMode.Both => typeof(SessionApplicationMiddleware),
             UseMode.ISPApplication => typeof(ApplicationMiddleware),
@@ -79,20 +79,25 @@ public static class ExtensionMethods
 
         services.AddSingleton(sp =>
         {
+            var hostEnvironment = sp.GetRequiredService<IHostEnvironment>();
+            defaultOptions.CookieSecure |= hostEnvironment.IsProduction() || hostEnvironment.IsStaging();
+            return defaultOptions;
+        });
+
+        services.AddSingleton(sp =>
+        {
             var configuration = sp.GetRequiredService<IConfiguration>();
             var section = configuration.GetSection("IspSession") ?? throw new InvalidOperationException("missing IspSession section in appsettings.json, e.g. \"ConnectionStrings:IspSession\": \"localhost:6379,defaultDatabase=1,ssl=False\"");
-            var hostEnvironment = sp.GetRequiredService<IHostEnvironment>();
-
-            defaultOptions.CookieSecure |=hostEnvironment.IsProduction() || hostEnvironment.IsStaging();
-
-            ISPSessionOptions iSPSessionOptions = new()
+            return new ISPSessionOptions
             {
                 KeyEncryptionSecret = section["KeyEncryptionSecret"] ?? throw new InvalidOperationException("missing KeyEncryptionSecret"),
                 MonitorSessionKey = section["MonitorSessionKey"],
             };
-
-            return new GlobalState(iSPSessionOptions, defaultOptions);
         });
+
+        services.AddScoped(sp => new GlobalState(
+            sp.GetRequiredService<ISPSessionOptions>(),
+            sp.GetRequiredService<ISPSessionRuntimeOptions>()));
 
         services.AddScoped(sp => new StateBroker(
             sp.GetRequiredService<IISPSessionConnectionMultiplexer>(),
@@ -118,8 +123,7 @@ public static class ExtensionMethods
             new KeyExpiredEventHook(
                 sp.GetRequiredService<IISPSessionConnectionMultiplexer>(),
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<KeyExpiredEventHook>(),
-                sp,
-                sp.GetRequiredService<GlobalState>()
+                sp
                 )
         );
         services.AddHostedService(sp => new ExpirationEventListener(sp.GetRequiredService<KeyExpiredEventHook>()));
